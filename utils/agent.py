@@ -95,8 +95,13 @@ class Agent:
                 random.shuffle(tasks)
                 for task in tasks:
                     if not task['is_claimed'] and task['type'] not in config.BLACKLIST:
-                        await self.complete_task(task=task['type'])
-                        await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
+                        if task['type'] == 'video':
+                            for _ in range(task['max_count']-task['count']):
+                                await self.complete_task(task=task['type'])
+                                await asyncio.sleep(16)
+                        else:
+                            await self.complete_task(task=task['type'])
+                            await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
                 
                 tickets = user['result']['tickets']
                 if tickets > config.MAX_SPIN_PER_CYCLE:
@@ -116,6 +121,7 @@ class Agent:
 
         response = await self.session.post('https://api.agent301.org/wheel/load', json=json_data)
         response = await response.json()
+        logger.info(f"wheel | Thread {self.thread} | {self.name} | TON : {response['result']['toncoin']/100} | NOT : {response['result']['notcoin']}")
         if int(datetime.now().timestamp()) >= response['result']['tasks']['daily']:
             json_data_daily = {
                 'type': 'daily',
