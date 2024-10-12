@@ -24,7 +24,11 @@ class Accounts:
         if config.USE_PROXY:
             proxy_dict = {}
             with open('proxy.txt','r') as file:
-                proxy_list = [i.strip().split() for i in file.readlines() if len(i.strip().split()) == 2]
+                list = [i.strip().split() for i in file.readlines()]
+                proxy_list = []
+                for info in list:
+                    if info!=[]:
+                        proxy_list.append((info[0],''.join(info[1:]).replace('.session','')))
                 for prox,name in proxy_list:
                     proxy_dict[name] = prox
             for session in sessions:
@@ -47,6 +51,9 @@ class Accounts:
 
                         await client.disconnect()
                     else:
+                        if config.CHECK_PROXY:
+                            logger.error(f"{session}.session ПРОКСИ НЕ НАЙДЕН")
+                            continue
                         client = Client(name=session, api_id=self.api_id, api_hash=self.api_hash, workdir=self.workdir)
 
                         if await client.connect():
