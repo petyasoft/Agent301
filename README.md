@@ -43,7 +43,7 @@
    ```
    You can add your referral code in config.pyyou can take it from your referral link, (it comes after startapp=)
    ```python
-   REF_CODE = '707649803'
+   REF_CODE = 'onetime707649803'
    ```
 
    delay between task executions
