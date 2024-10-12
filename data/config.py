@@ -17,6 +17,8 @@ WORKDIR = "sessions/"
 
 # использование прокси
 USE_PROXY = True # True/False
+# проверять прокси
+CHECK_PROXY = True
 
 #то что идет после startapp=
 REF_CODE = ""
@@ -28,7 +30,7 @@ MINI_SLEEP = [7, 20] #[min, max]
 TASK_SLEEP = [25, 50] #[min, max]
 
 # макимальное количество спинов в рулетке за круг
-MAX_SPIN_PER_CYCLE = 5
+MAX_SPIN_PER_CYCLE = 10
 
 # задержка после круга
 BIG_SLEEP = [24*60*60,28*60*60]
