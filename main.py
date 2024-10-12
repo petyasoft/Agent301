@@ -22,7 +22,11 @@ async def main():
         if USE_PROXY:
             proxy_dict = {}
             with open('proxy.txt','r',encoding='utf-8') as file:
-                proxy = [i.strip().split() for i in file.readlines() if len(i.strip().split()) == 2]
+                list = [i.strip().split() for i in file.readlines()]
+                proxy = []
+                for info in list:
+                    if info!=[]:
+                        proxy.append((info[0],''.join(info[1:]).replace('.session','')))
                 for prox,name in proxy:
                     proxy_dict[name] = prox
             for thread, account in enumerate(accounts):
