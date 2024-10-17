@@ -7,28 +7,23 @@ from fake_useragent import UserAgent
 from pyrogram import Client
 from data import config
 from aiohttp_socks import ProxyConnector
-from pyrogram.errors import FloodWait
 from datetime import datetime
 
 import aiohttp
 import asyncio
 import random
-import time
 import json
 
 
 class Agent:
-    def __init__(self, thread: int, account: str, proxy : str):
+    def __init__(self, thread: int, account: str, proxy : str, authozire = False):
         self.thread = thread
         self.name = account
-        
+        self.authozire = authozire
         if self.thread % 10 == 0:
             self.ref = 'onetime707649803'
         else:
-            if config.REF_CODE != '':
-                self.ref = config.REF_CODE
-            else:
-                self.ref = 'onetime707649803'
+            self.ref = config.REF_CODE
             
         if proxy:
             proxy_client = {
@@ -38,9 +33,11 @@ class Agent:
                 "username": proxy.split(':')[2],
                 "password": proxy.split(':')[3],
             }
-            self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_client)
+            if not authozire:
+                self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR, proxy=proxy_client)
         else:
-            self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR)
+            if not authozire:
+                self.client = Client(name=account, api_id=config.API_ID, api_hash=config.API_HASH, workdir=config.WORKDIR)
                 
         if proxy:
             self.proxy = f"{config.PROXY_TYPE}://{proxy.split(':')[2]}:{proxy.split(':')[3]}@{proxy.split(':')[0]}:{proxy.split(':')[1]}"
@@ -143,15 +140,29 @@ class Agent:
             if rps_resp['ok']:
                 logger.success(f"wheel | Thread {self.thread} | {self.name} | Claim 1 TICKET for task")
             await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
-        if not response['result']['tasks']['bird']:
-            json_data_bird = {
-                'type': 'bird',
-            }
-            bird_resp = await self.session.post('https://api.agent301.org/wheel/task', json=json_data_bird)
-            bird_resp = await bird_resp.json()
-            if bird_resp['ok']:
-                logger.success(f"wheel | Thread {self.thread} | {self.name} | Claim 1 TICKET for task")
-            await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
+        if 'bird' in response['result']['tasks']:
+            if not response['result']['tasks']['bird']:
+                json_data_bird = {
+                    'type': 'bird',
+                }
+                bird_resp = await self.session.post('https://api.agent301.org/wheel/task', json=json_data_bird)
+                bird_resp = await bird_resp.json()
+                if bird_resp['ok']:
+                    logger.success(f"wheel | Thread {self.thread} | {self.name} | Claim 1 TICKET for task")
+                await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
+        else:
+            pass
+        if int(datetime.now().timestamp()) >= response['result']['tasks']['hour']['timestamp']:
+            for _ in range(5-response['result']['tasks']['hour']['count']):
+                await asyncio.sleep(15)
+                json_data_daily = {
+                    'type': 'hour',
+                }
+                daily_resp = await self.session.post('https://api.agent301.org/wheel/task', json=json_data_daily)
+                daily_resp = await daily_resp.json()
+                if daily_resp['ok']:
+                    logger.success(f"wheel | Thread {self.thread} | {self.name} | Claim 1 TICKET for VIDEO reward")
+                await asyncio.sleep(random.uniform(*config.TASK_SLEEP))
             
         for _ in range(spin_count):
             json_data = {}
@@ -191,14 +202,9 @@ class Agent:
     
     async def get_me(self):
         
-        if str(self.tg_acc_info['user']['id']) == self.ref[7:]:
-            json_data = {
-                'referrer_id': 0,
-            }
-        else:
-            json_data = {
-                'referrer_id': int(self.ref[7:]),
-            }
+        json_data = {
+            'referrer_id': int(self.ref[7:]),
+        }
         response = await self.session.post('https://api.agent301.org/getMe', json=json_data)
         response = await response.json()
         return response
@@ -212,14 +218,26 @@ class Agent:
 
     async def login(self):
         try:
-            tg_web_data = await self.get_tg_web_data()
+            if not self.authozire:
+                tg_web_data = await self.get_tg_web_data()
+            else:
+                with open('authorization.txt','r') as file:
+                    file = [i.split() for i in file.readlines()]
+                    for name,token in file:
+                        if name == self.name:
+                            self.session.headers['authorization'] = token
+                            tg_web_data = True
+                            break
+                    else:
+                        logger.info(f"login | Thread {self.thread} | {self.name} | не найдена авторизация")
+                    
             if tg_web_data == False:
                 return False
             return True
         except Exception as err:
             logger.error(f"login | Thread {self.thread} | {self.name} | {err}")
             return False
-
+        
     async def get_tg_web_data(self):
         async with self.client:
             try:
@@ -232,17 +250,10 @@ class Agent:
                 ))
 
                 auth_url = web_view.url
-                
                 self.session.headers['authorization'] = unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0])
                 
                 self.tg_acc_info = self.get_dict(query=unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0]))
                 return True
-            except FloodWait as e:
-                logger.warning(f"FloodWait: необходимо подождать {e.x} секунд перед повторной попыткой")
-                time.sleep(e.x)
-                return await self.get_tg_web_data()
-
-
             except Exception as err:
                 logger.error(f"get_tg_web_data | Thread {self.thread} | {self.name} | {err}")
                 return False
@@ -251,3 +262,63 @@ class Agent:
         parsed_query = parse_qs(query)
         parsed_query['user'] = json.loads(unquote(parsed_query['user'][0]))
         return parsed_query
+
+    async def save_authorization(self):
+        await asyncio.sleep(random.uniform(*config.ACC_DELAY))
+        async with self.client:
+            try:
+                web_view = await self.client.invoke(RequestAppWebView(
+                    peer=await self.client.resolve_peer('Agent301Bot'),
+                    app=InputBotAppShortName(bot_id=await self.client.resolve_peer('Agent301Bot'), short_name="app"),
+                    platform='android',
+                    write_allowed=True,
+                    start_param=self.ref
+                ))
+
+                auth_url = web_view.url
+                authorization = unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0])
+                with open('authorization.txt','r') as data:
+                    rows = [i.split() for i in data.readlines()]
+                with open('authorization.txt','a+') as file:
+                    for name,token in rows:
+                        if name==self.name:
+                            logger.info(f"save_authorization | Thread {self.thread} | {self.name} | авторизация этого аккаунта уже существует")
+                            break
+                    else:
+                        file.write(f"{self.name} {authorization}\n")
+                await self.session.close()
+            except Exception as err:
+                logger.error(f"get_tg_web_data | Thread {self.thread} | {self.name} | {err}")
+                await self.session.close()
+                return False
+    
+    async def stats(self):
+        try:
+            await self.login()
+            
+            json_data = {}
+
+            load = await self.session.post('https://api.agent301.org/wheel/load', json=json_data)
+            load = await load.json()
+            
+            json_data = {
+                'referrer_id': int(self.ref[7:]),
+            }
+            get_me = await self.session.post('https://api.agent301.org/getMe', json=json_data)
+            get_me = await get_me.json()
+            
+            session = f"{self.name}.session"
+            toncoin = load['result']['toncoin']/100
+            notcoin = load['result']['notcoin']
+            balance = get_me['result']['balance']
+            tickets = get_me['result']['tickets']
+            await self.session.close()
+            return {
+                'session' : session,
+                'balance' : balance,
+                'tickets' : tickets,
+                'toncoin' : toncoin,
+                'notcoin' : notcoin
+            }
+        except:
+            return None
