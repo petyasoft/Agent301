@@ -21,16 +21,16 @@ USE_PROXY = True # True/False
 CHECK_PROXY = True
 
 #то что идет после startapp=
-REF_CODE = ""
+REF_CODE = "onetime707649803"
 
 # мини задержка 
-MINI_SLEEP = [7, 20] #[min, max]
+MINI_SLEEP = [7, 8] #[min, max]
 
 # задержка между тасками
 TASK_SLEEP = [25, 50] #[min, max]
 
 # макимальное количество спинов в рулетке за круг
-MAX_SPIN_PER_CYCLE = 10
+MAX_SPIN_PER_CYCLE = 50
 
 # задержка после круга
 BIG_SLEEP = [24*60*60,28*60*60]
